@@ -1,4 +1,4 @@
-package file
+package scan
 
 import (
 	"io/fs"
