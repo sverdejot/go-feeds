@@ -10,7 +10,7 @@ import (
 func TestValidate(t *testing.T) {
 	t.Run("validate name starts with prefix", func(t *testing.T) {
 		filename := "test_file"
-		condition := StartsWith{ prefix: "test" }
+		condition := StartsWith{ Prefix: "test" }
 
 		err := Validate(filename, []Condition{ condition })
 
@@ -49,6 +49,59 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestValidateFiles(t *testing.T) {
+	t.Run("all valid files", func(t *testing.T) {
+		filenames := []string{
+			"valid-file-1",
+			"valid-file-2",
+		}
+
+		valid, rejected := ValidateFiles(filenames, []Condition{ StartsWith{"valid-"} })
+
+		allFilesShouldBeValid(t, filenames, valid, rejected)
+	})
+
+	t.Run("one invalid file", func(t *testing.T) {
+		filenames := []string{
+			"valid-file-1",
+			"invalid-file-1",
+		}
+
+		_, rejected := ValidateFiles(filenames, []Condition{ StartsWith{"valid-"} })
+
+		if rejectErrors := rejected["invalid-file-1"]; rejectErrors == nil {
+			t.Errorf("validate should have thrown an error but got nothing")
+		}
+	})
+
+
+	t.Run("all valid files with multiple conditions", func(t *testing.T) {
+		filenames := []string{
+			"valid-file-1-suffix",
+			"valid-file-2-suffix",
+		}
+		conditions := []Condition{
+			StartsWith{"valid-"},
+			EndsWith{"-suffix"},
+		}
+
+		valid, rejected := ValidateFiles(filenames, conditions)
+		
+		allFilesShouldBeValid(t, filenames, valid, rejected)
+	})
+}
+
+func allFilesShouldBeValid(t testing.TB, filenames, valid []string, rejected map[string][]error) {
+	t.Helper()
+	
+	if len(rejected) != 0 {
+		t.Errorf("no files should be rejected but got %d %v", len(rejected), rejected)
+	}
+
+	if !slices.Equal(valid, filenames) {
+		t.Errorf("all %d files %v should be valid but only %d files %v are", len(filenames), filenames, len(valid), valid)
+	}
+}
 
 func compareErrors(t testing.TB, got, want []error) {
 	t.Helper()
