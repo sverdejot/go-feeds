@@ -3,22 +3,50 @@ package main
 import (
 	"gofeeds/scan"
 	"gofeeds/validate"
+	"gofeeds/handle"
+	"io"
 	"os"
 	"log"
-	"reflect"
 )
 
 func main() {
-	files := scan.Walk(os.DirFS("samples/"))
+	fileSystem := os.DirFS("samples/")
+	filePaths := scan.Walk(fileSystem)
 	
 	conditions := []validate.Condition{
-		validate.StartsWith{ Prefix: "sample-" },
+		validate.StartsWith{ Prefix: "hello-" },
 	}
 
-	valid, rejected := validate.ValidateFiles(files, conditions)
+	validFilePaths, rejectedFilePaths := validate.ValidateFiles(filePaths, conditions)
+	
+	handler := handle.Handler{
+		FileSystem: fileSystem, 
+		FileFactory: OsFileFactory{}, 
+		LetPath: "samples/accept", 
+		RejectPath: "samples/reject",
+	}
 
-	log.Printf("valid: %v", valid)
-	log.Printf("invalid: %v", reflect.ValueOf(rejected).MapKeys())
+	for rejectedFile := range rejectedFilePaths {
+		err := handler.Reject(rejectedFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	for _, file := range validFilePaths {
+		err := handler.Let(file)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	log.Printf("total valid: %d", len(validFilePaths))
+	log.Printf("total invalid: %d", len(rejectedFilePaths))
 }
 
+type OsFileFactory struct {
+}
 
+func (f OsFileFactory) Create(name string) (io.Writer, error) {
+	return os.Create(name)
+}
