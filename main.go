@@ -1,9 +1,9 @@
 package main
 
 import (
-	"gofeeds/scan"
-	"gofeeds/validate"
-	"gofeeds/handle"
+	"gofeeds/steps/scan"
+	"gofeeds/steps/validate"
+	"gofeeds/steps/handle"
 	"io"
 	"os"
 	"log"
@@ -19,11 +19,13 @@ func main() {
 
 	validFilePaths, rejectedFilePaths := validate.ValidateFiles(filePaths, conditions)
 	
+	letPath			:= "samples/accept"
+	rejectPath	:= "samples/reject"
 	handler := handle.Handler{
-		FileSystem: fileSystem, 
-		FileFactory: OsFileFactory{}, 
-		LetPath: "samples/accept", 
-		RejectPath: "samples/reject",
+		FileSystem: 	fileSystem, 
+		FileFactory: 	OsFileFactory{}, 
+		LetPath: 			letPath, 
+		RejectPath: 	rejectPath,
 	}
 
 	for rejectedFile := range rejectedFilePaths {
